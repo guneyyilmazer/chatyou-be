@@ -11,13 +11,13 @@ const jwt = require("jsonwebtoken");
 const io = require("socket.io")(3001, {
   maxHttpBufferSize: 1e7,
   cors: {
-    origin: "https://chatyou.io",
+    origin: "http://localhost:3000",
   },
 });
 const app = express();
 app.use(
   cors({
-    origin: "https://chatyou.io",
+    origin: "http://localhost:3000",
     optionsSuccessStatus: 200,
   })
 );
