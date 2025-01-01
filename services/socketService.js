@@ -2,11 +2,13 @@ const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
 const { findRoom, prepareMessages } = require("./roomService");
 const formatTime = (time) => (time.length === 1 ? `0${time}` : time);
+const dotenv = require("dotenv");
+dotenv.config();
 
 function initSocket(server) {
   const io = new Server(server, {
     cors: {
-      origin: "http://localhost:3000",
+      origin: process.env.CLIENT_URL,
     },
   });
 
