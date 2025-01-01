@@ -8,22 +8,30 @@ const genToken = (userId, username) => {
   });
 };
 
+const Verify = async (req, res) => {
+  try {
+    const { token } = req.body;
+    const { userId } = await jwt.verify(token, process.env.SECRET);
+    res.status(200).json({ valid: true, userId });
+  } catch (err) {
+    res.status(401).json({ valid: false, error: err.message });
+  }
+};
+
 const Signup = async (req, res) => {
   try {
     const { username, email, password } = req.body;
-    if(username.length>=4)
-    {
-
+    if (username.length >= 4) {
       const userId = await UserModel.signup(username, email, password);
       const token = genToken(userId, username);
       res.status(200).json({ AuthValidation: token });
+    } else {
+      res
+        .status(401)
+        .json({ error: "Username must be atleast 4 characters long." });
     }
-    else{
-    res.status(401).json({ error: "Username must be atleast 4 characters long." });
-
-    }
-    } catch (err) {
-      console.log(err.message);
+  } catch (err) {
+    console.log(err.message);
     res.status(401).json({ error: err.message });
   }
 };
@@ -70,12 +78,16 @@ const FindUsers = async (req, res) => {
   try {
     const { username } = req.body;
 
-      const Users = await UserModel.find({ "username": { "$regex": username, "$options": "i" } })
-        .limit(50)
-        .select("username")
-        .select("profilePicture");
-      const includes = Users.filter((item) => item.username.includes(username));
-      res.status(200).json({ users: includes, notFound: includes.length==0 ? true:false });
+    const Users = await UserModel.find({
+      username: { $regex: username, $options: "i" },
+    })
+      .limit(50)
+      .select("username")
+      .select("profilePicture");
+    const includes = Users.filter((item) => item.username.includes(username));
+    res
+      .status(200)
+      .json({ users: includes, notFound: includes.length == 0 ? true : false });
   } catch (err) {
     console.log(err.message);
 
@@ -91,7 +103,7 @@ const UpdateProfilePicture = async (req, res) => {
       throw new Error("Not verified.");
     }
     const inDB = await UserModel.findOneAndUpdate(
-      { _id:userId },
+      { _id: userId },
       { profilePicture },
       { new: true }
     );
@@ -134,6 +146,7 @@ const UpdateEmail = async (req, res) => {
   }
 };
 module.exports = {
+  Verify,
   Signup,
   Login,
   LoadUser,

@@ -1,5 +1,6 @@
 const express = require("express");
 const {
+  Verify,
   Signup,
   Login,
   LoadUser,
@@ -7,14 +8,14 @@ const {
   UpdateProfilePicture,
   UpdateUsername,
   UpdateEmail,
-
 } = require("../controllers/userController");
 const withAuth = require("../middleware/withAuth");
 const router = express.Router();
 
+router.post("/verify", Verify);
 router.post("/signup", Signup);
-
 router.post("/login", Login);
+
 router.use(withAuth);
 router.post("/loadUser", LoadUser);
 router.post("/findUsers", FindUsers);
