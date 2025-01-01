@@ -1,9 +1,10 @@
 const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
-const { findRoom, prepareMessages } = require("./roomService");
-const formatTime = (time) => (time.length === 1 ? `0${time}` : time);
+const { findRoom, prepareMessages, createRoom } = require("./roomService");
 const dotenv = require("dotenv");
 dotenv.config();
+
+const formatTime = (time) => (time.length === 1 ? `0${time}` : time);
 
 function initSocket(server) {
   const io = new Server(server, {
@@ -61,6 +62,45 @@ function initSocket(server) {
       }
     );
 
+    socket.on("typing", (user, room) => {
+      try {
+        io.to(room).emit("typing-to-client", user);
+      } catch (err) {
+        console.error("Typing event error:", err.message);
+      }
+    });
+
+    socket.on("stopped-typing", (user, room) => {
+      try {
+        io.to(room).emit("stopped-typing-to-client", user);
+      } catch (err) {
+        console.error("Stopped typing event error:", err.message);
+      }
+    });
+
+    socket.on("read-msg", async (room, chattingWith, user) => {
+      try {
+        const date = new Date();
+        const roomInDB = await findRoom(user.userId, room, chattingWith);
+
+        if (roomInDB) {
+          const lastMessage = roomInDB.messages[roomInDB.messages.length - 1];
+
+          if (!lastMessage.seenBy.some((seen) => seen.userId === user.userId)) {
+            lastMessage.seenBy.push({ userId: user.userId, time: date });
+
+            await roomInDB.save();
+
+            const updatedMessage = await prepareMessages([lastMessage]);
+
+            io.to(roomInDB.name).emit("update-message", updatedMessage);
+          }
+        }
+      } catch (err) {
+        console.error("Read message event error:", err.message);
+      }
+    });
+
     socket.on("disconnect", () => {
       console.log(`Socket disconnected: ${socket.id}`);
     });
@@ -84,6 +124,7 @@ async function handleMessageSend(
     content,
     pictures,
     sent: date,
+    seenBy: [{ userId: user.userId, time: date }],
   };
 
   if (room) {
