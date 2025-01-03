@@ -2,6 +2,8 @@ const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
 const { findRoom, prepareMessages, createRoom } = require("./roomService");
 const dotenv = require("dotenv");
+const UserModel = require("../schemas/userSchema");
+
 dotenv.config();
 
 const formatTime = (time) => (time.length === 1 ? `0${time}` : time);
@@ -36,6 +38,9 @@ function initSocket(server) {
     socket.on(
       "send-msg",
       async (user, roomName, content, pictures, chattingWith) => {
+        const { profilePicture } = await UserModel.findOne({
+          _id: user.userId,
+        });
         const date = new Date();
         try {
           const message = await handleMessageSend(
@@ -54,7 +59,7 @@ function initSocket(server) {
               hour: formatTime(date.getHours().toString()),
               minute: formatTime(date.getMinutes().toString()),
             },
-            ""
+            profilePicture
           );
         } catch (err) {
           console.error("Send message error:", err.message);
